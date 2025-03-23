@@ -1,24 +1,14 @@
 {
-  "name": "discord-voice-kick-bot",
+  "name": "discord-voice-monitor",
   "version": "1.0.0",
-  "description": "Discord bot that kicks a specific user if they exceed a certain decibel threshold.",
   "main": "index.js",
+  "dependencies": {
+    "discord.js": "^14.0.0",
+    "@discordjs/voice": "^0.16.0",
+    "prism-media": "^1.3.5",
+    "dotenv": "^16.0.0"
+  },
   "scripts": {
     "start": "node index.js"
-  },
-  "dependencies": {
-    "@discordjs/opus": "^0.10.0",
-    "@discordjs/voice": "^0.14.0",
-    "discord.js": "^14.18.0",
-    "dotenv": "^16.3.1",
-    "node-opus": "^0.3.3",
-    "opusscript": "^0.0.8",
-    "prism-media": "^1.3.5",
-    "tweetnacl": "^1.0.3"
-  },
-  "engines": {
-    "node": ">=16.9.0"
-  },
-  "author": "Your Name",
-  "license": "MIT"
+  }
 }
