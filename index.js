@@ -30,13 +30,13 @@ let isMonitoring = false;
 client.once('ready', async () => {
     console.log('Bot is connected and ready!');
     console.log(`Monitoring specific user with ID: ${AUTHORIZED_USER_ID}`);
-    
+
     // Check if target user is already in a voice channel on startup
     try {
         // Loop through all guilds the bot is in
         for (const guild of client.guilds.cache.values()) {
             await guild.members.fetch(); // Make sure to load all members
-            
+
             const member = guild.members.cache.get(AUTHORIZED_USER_ID);
             if (member && member.voice.channelId) {
                 console.log(`[STARTUP] Target user found in voice channel ${member.voice.channel.name} in guild ${guild.name}`);
@@ -63,14 +63,14 @@ function calculateVolume(data) {
 function stopAllMonitoring() {
     console.log('[MONITOR] Stopping all audio monitoring');
     isMonitoring = false;
-    
+
     // Clean up all active streams
     activeStreams.forEach((stream, userId) => {
         if (stream && typeof stream.destroy === 'function') {
             stream.destroy();
         }
     });
-    
+
     // Clear the map
     activeStreams.clear();
 }
@@ -116,10 +116,10 @@ function processAudio(receiver, user) {
 
         // Calculate audio volume in dB
         let volume = calculateVolume(chunk);
-        
+
         // Increment sample counter
         volumeSampleCount++;
-        
+
         // Log a message to console with the volume
         if (volumeSampleCount % LOG_INTERVAL === 0) {
             console.log(`[VOLUME] ${user.displayName} is speaking at ${volume.toFixed(2)} dB`);
@@ -140,7 +140,7 @@ function processAudio(receiver, user) {
         if (volume > DECIBEL_THRESHOLD) {
             console.log(`[ALERT] ${user.displayName} exceeded the threshold (${volume.toFixed(2)} dB), muting!`);
             lastMuteTime = now;
-            
+
             user.voice.setMute(true, 'Noise level too high!').catch(error => {
                 console.error('[ERROR] Failed to mute user:', error);
             });
@@ -154,7 +154,7 @@ function processAudio(receiver, user) {
             activeStreams.delete(user.id);
         }
     });
-    
+
     // Handle end of stream
     audioStream.on('end', () => {
         console.log(`[MONITOR] Audio stream ended for user: ${user.displayName}`);
@@ -175,12 +175,12 @@ function joinAndMonitor(channel, guild) {
             isMonitoring = true;
             return existingConnection;
         }
-        
+
         // If we're connected to a different channel, destroy that connection first
         if (existingConnection) {
             existingConnection.destroy();
         }
-        
+
         // Create new connection
         const connection = joinVoiceChannel({
             channelId: channel.id,
@@ -189,15 +189,15 @@ function joinAndMonitor(channel, guild) {
             selfDeaf: false,
             selfMute: false
         });
-        
+
         console.log(`[BOT] Automatically joined voice channel ${channel.name} to monitor specific user`);
-        
+
         // Enable monitoring
         isMonitoring = true;
-        
+
         // Monitor audio for the specific user
         const receiver = connection.receiver;
-        
+
         // Add connection state change listener to detect disconnects
         connection.on('stateChange', (oldState, newState) => {
             console.log(`[CONNECTION] Connection state changed from ${oldState.status} to ${newState.status}`);
@@ -206,7 +206,7 @@ function joinAndMonitor(channel, guild) {
                 console.log('[CONNECTION] Bot was disconnected from voice channel');
             }
         });
-        
+
         // Set up speaking event
         receiver.speaking.on('start', (userId) => {
             if (userId === AUTHORIZED_USER_ID && isMonitoring) {
@@ -215,7 +215,7 @@ function joinAndMonitor(channel, guild) {
                 if (user) processAudio(receiver, user);
             }
         });
-        
+
         return connection;
     } catch (error) {
         console.error('[ERROR] Error joining voice channel:', error);
@@ -231,17 +231,17 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
         console.log(`[DEBUG] Voice state update for user ${oldState.member.displayName || newState.member.displayName}`);
         console.log(`[DEBUG] Old channel: ${oldState.channelId ? oldState.channel.name : 'None'}`);
         console.log(`[DEBUG] New channel: ${newState.channelId ? newState.channel.name : 'None'}`);
-        
+
         // Case 1: User joined a voice channel (was not in a channel before, now is in a channel)
         if (!oldState.channelId && newState.channelId) {
             console.log(`[EVENT] Target user ${newState.member.displayName} joined channel ${newState.channel.name}`);
             await joinAndMonitor(newState.channel, newState.guild);
         }
-        
+
         // Case 2: User left a voice channel (was in a channel before, now is not in a channel)
         else if (oldState.channelId && !newState.channelId) {
             console.log(`[EVENT] Target user ${oldState.member.displayName} left voice channel ${oldState.channel.name}`);
-            
+
             // Clean up monitoring for this user
             if (activeStreams.has(AUTHORIZED_USER_ID)) {
                 const stream = activeStreams.get(AUTHORIZED_USER_ID);
@@ -250,7 +250,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
                 }
                 activeStreams.delete(AUTHORIZED_USER_ID);
             }
-            
+
             // Leave the voice channel automatically when user leaves
             const connection = getVoiceConnection(oldState.guild.id);
             if (connection) {
@@ -259,11 +259,11 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
                 connection.destroy();
             }
         }
-        
+
         // Case 3: User moved to a different channel
         else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
             console.log(`[EVENT] Target user ${newState.member.displayName} moved from ${oldState.channel.name} to ${newState.channel.name}`);
-            
+
             // Clean up old monitoring
             if (activeStreams.has(AUTHORIZED_USER_ID)) {
                 const stream = activeStreams.get(AUTHORIZED_USER_ID);
@@ -272,7 +272,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
                 }
                 activeStreams.delete(AUTHORIZED_USER_ID);
             }
-            
+
             // Follow the user to the new channel
             await joinAndMonitor(newState.channel, newState.guild);
         }
@@ -282,9 +282,9 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 // Keep the commands for manual control
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;  // If author is a bot, do nothing
-    
-    if (message.content.toLowerCase() === '!EP_join') {
-        console.log('[COMMAND] Received !EP_join command');
+
+    if (message.content.toLowerCase() === '!join') {
+        console.log('[COMMAND] Received !join command');
         if (message.member && message.member.voice.channel) {
             await joinAndMonitor(message.member.voice.channel, message.guild);
             message.reply(`Joined voice channel ${message.member.voice.channel.name}!`);
@@ -293,8 +293,8 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    if (message.content.toLowerCase() === '!EP_leave') {
-        console.log('[COMMAND] Received !EP_leave command');
+    if (message.content.toLowerCase() === '!leave') {
+        console.log('[COMMAND] Received !leave command');
         try {
             const connection = getVoiceConnection(message.guild.id);
             if (connection) {
@@ -339,14 +339,14 @@ client.on('messageCreate', async (message) => {
         isMonitoring = true;
         message.reply('Audio monitoring resumed!');
     }
-    
+
     // Add a status command to see where things stand
     if (message.content.toLowerCase() === '!status') {
         console.log('[COMMAND] Received !status command');
         const connection = getVoiceConnection(message.guild.id);
         const targetMember = message.guild.members.cache.get(AUTHORIZED_USER_ID);
         let statusMsg = "Current Status:\n";
-        
+
         statusMsg += `- Monitoring active: ${isMonitoring ? "Yes" : "No"}\n`;
         statusMsg += `- Bot connected to voice: ${connection ? "Yes" : "No"}\n`;
         statusMsg += `- Bot channel: ${connection ? client.channels.cache.get(connection.joinConfig.channelId).name : "None"}\n`;
@@ -355,7 +355,7 @@ client.on('messageCreate', async (message) => {
             statusMsg += `- Target user channel: ${targetMember.voice.channel.name}\n`;
         }
         statusMsg += `- Active monitoring streams: ${activeStreams.size}`;
-        
+
         message.reply(statusMsg);
     }
 });
