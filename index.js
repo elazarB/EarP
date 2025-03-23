@@ -283,7 +283,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;  // If author is a bot, do nothing
     
-    if (message.content.toLowerCase() === '!join') {
+    if (message.content.toLowerCase() === '!EP_join') {
         console.log('[COMMAND] Received !join command');
         if (message.member && message.member.voice.channel) {
             await joinAndMonitor(message.member.voice.channel, message.guild);
@@ -293,7 +293,7 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    if (message.content.toLowerCase() === '!leave') {
+    if (message.content.toLowerCase() === '!EP_leave') {
         console.log('[COMMAND] Received !leave command');
         try {
             const connection = getVoiceConnection(message.guild.id);
